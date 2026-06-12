@@ -1,0 +1,55 @@
+# jai-gateway — LiteLLM proxy configuration
+#
+# Three model groups. Callers never name a provider model directly; they ask for a
+# group ("reasoning", "fast", "embed") and the gateway routes, falls back, and meters.
+# That indirection is the vendor-leverage story in working code: swapping or
+# split-testing providers is a config edit, not a code change.
+#
+# Keyless mode: with JAI_MOCK=1 the jai-gateway client sends mock_response on every
+# call, so this config works with no provider keys set.
+
+model_list:
+  # ── reasoning: agent decision-making ──
+  - model_name: reasoning
+    litellm_params:
+      model: anthropic/claude-sonnet-4-6
+      api_key: os.environ/ANTHROPIC_API_KEY
+  - model_name: reasoning
+    litellm_params:
+      model: openai/gpt-5.1
+      api_key: os.environ/OPENAI_API_KEY
+
+  # ── reasoning-max: escalation tier for the hardest decisions ──
+  - model_name: reasoning-max
+    litellm_params:
+      model: anthropic/claude-opus-4-8
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  # ── fast: bulk work — datagen, LLM-judges, triage ──
+  - model_name: fast
+    litellm_params:
+      model: anthropic/claude-haiku-4-5
+      api_key: os.environ/ANTHROPIC_API_KEY
+  - model_name: fast
+    litellm_params:
+      model: gemini/gemini-2.5-flash
+      api_key: os.environ/GEMINI_API_KEY
+
+  # ── embed: vector embeddings for jai-cortex ──
+  - model_name: embed
+    litellm_params:
+      model: openai/text-embedding-3-small
+      api_key: os.environ/OPENAI_API_KEY
+
+litellm_settings:
+  num_retries: 2
+  request_timeout: 120
+  drop_params: true
+
+router_settings:
+  routing_strategy: simple-shuffle
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  # DATABASE_URL (set in compose) enables virtual keys: one key per (tenant, agent)
+  # with its own budget — the multi-tenant cost-control surface.

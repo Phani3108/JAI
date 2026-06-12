@@ -1,0 +1,258 @@
+{
+  "$defs": {
+    "AutonomyLevel": {
+      "description": "How much the agent may do without a human. Promotion between levels is gated by\njai-dyno scorecards \u2014 an agent is promoted when it proves itself, never by edit.",
+      "enum": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "title": "AutonomyLevel",
+      "type": "integer"
+    },
+    "GuardrailsConfig": {
+      "properties": {
+        "input_screening": {
+          "default": true,
+          "title": "Input Screening",
+          "type": "boolean"
+        },
+        "output_validation": {
+          "default": true,
+          "title": "Output Validation",
+          "type": "boolean"
+        },
+        "policies": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Policies",
+          "type": "array"
+        }
+      },
+      "title": "GuardrailsConfig",
+      "type": "object"
+    },
+    "HITLGate": {
+      "description": "A named checkpoint where the run pauses for human approval (jai-brakes).",
+      "properties": {
+        "approver_roles": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Approver Roles",
+          "type": "array"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "HITLGate",
+      "type": "object"
+    },
+    "Mandate": {
+      "description": "Hard limits the agent cannot exceed regardless of reasoning (negotiator pattern:\nbounded delegation). Violations are blocked by jai-governor and audited, not retried.",
+      "properties": {
+        "max_rounds": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Rounds"
+        },
+        "max_spend_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Spend Usd"
+        },
+        "notes": {
+          "default": "",
+          "title": "Notes",
+          "type": "string"
+        }
+      },
+      "title": "Mandate",
+      "type": "object"
+    },
+    "MetricTargets": {
+      "description": "Scorecard thresholds. No scorecard \u2192 no ship; below target \u2192 no promotion.",
+      "properties": {
+        "eval_pass_rate": {
+          "default": 0.9,
+          "title": "Eval Pass Rate",
+          "type": "number"
+        },
+        "max_cost_usd_per_task_p95": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Cost Usd Per Task P95"
+        },
+        "max_policy_violations": {
+          "default": 0,
+          "title": "Max Policy Violations",
+          "type": "integer"
+        }
+      },
+      "title": "MetricTargets",
+      "type": "object"
+    },
+    "ModelPolicy": {
+      "description": "Which gateway model group the agent uses and what it may spend.",
+      "properties": {
+        "budget_usd_per_task": {
+          "default": 0.5,
+          "title": "Budget Usd Per Task",
+          "type": "number"
+        },
+        "group": {
+          "default": "reasoning",
+          "title": "Group",
+          "type": "string"
+        },
+        "max_tokens": {
+          "default": 4096,
+          "title": "Max Tokens",
+          "type": "integer"
+        }
+      },
+      "title": "ModelPolicy",
+      "type": "object"
+    },
+    "PromptRef": {
+      "description": "Prompts are versioned files, never inline strings (ADR-001).",
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "version": {
+          "default": "1",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "PromptRef",
+      "type": "object"
+    },
+    "ToolRef": {
+      "description": "A reference to an MCP server tool. Tools are protocol references, never imports.",
+      "properties": {
+        "server": {
+          "title": "Server",
+          "type": "string"
+        },
+        "tool": {
+          "default": "*",
+          "title": "Tool",
+          "type": "string"
+        }
+      },
+      "required": [
+        "server"
+      ],
+      "title": "ToolRef",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "a2a_card": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "A2A Card"
+    },
+    "api_version": {
+      "const": "jai/v1",
+      "default": "jai/v1",
+      "title": "Api Version",
+      "type": "string"
+    },
+    "autonomy_level": {
+      "$ref": "#/$defs/AutonomyLevel",
+      "default": 1
+    },
+    "description": {
+      "title": "Description",
+      "type": "string"
+    },
+    "guardrails": {
+      "$ref": "#/$defs/GuardrailsConfig"
+    },
+    "hitl_gates": {
+      "items": {
+        "$ref": "#/$defs/HITLGate"
+      },
+      "title": "Hitl Gates",
+      "type": "array"
+    },
+    "mandate": {
+      "$ref": "#/$defs/Mandate"
+    },
+    "metrics": {
+      "$ref": "#/$defs/MetricTargets"
+    },
+    "model": {
+      "$ref": "#/$defs/ModelPolicy"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "prompt": {
+      "$ref": "#/$defs/PromptRef"
+    },
+    "tools": {
+      "items": {
+        "$ref": "#/$defs/ToolRef"
+      },
+      "title": "Tools",
+      "type": "array"
+    }
+  },
+  "required": [
+    "name",
+    "description",
+    "prompt"
+  ],
+  "title": "AgentManifest",
+  "type": "object"
+}

@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+
+# Node
+node_modules/
+.next/
+*.tsbuildinfo
+
+# Env & secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Private strategy docs (Jaggaer-specific material stays out of the public repo)
+docs/strategy/_private/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Local data
+*.local
+.langfuse/

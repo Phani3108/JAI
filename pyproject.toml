@@ -1,0 +1,104 @@
+[project]
+name = "jai"
+version = "0.1.0"
+description = "JAI — modular agentic platform for procurement (workspace root)"
+requires-python = ">=3.12"
+
+[tool.uv.workspace]
+members = [
+    "parts/manifest",
+    "parts/gateway",
+    "parts/blackbox",
+    "parts/meter",
+    "parts/foundry",
+    "parts/dyno",
+    "parts/engine",
+    "apps/api",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.8",
+    "pytest>=8",
+    "import-linter>=2",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["parts", "apps"]
+addopts = "-q"
+
+# ── Rippability rule, enforced ────────────────────────────────────────────────
+# Parts communicate only through published contracts. jai_manifest is the shared
+# contract package; everything may import it, it imports no other part. The
+# leaf parts are mutually independent. jai_engine is the assembler: it may use
+# other parts' PUBLIC APIs, never their _internal modules.
+[tool.importlinter]
+root_packages = [
+    "jai_manifest",
+    "jai_gateway",
+    "jai_blackbox",
+    "jai_meter",
+    "jai_foundry",
+    "jai_dyno",
+    "jai_engine",
+]
+
+[[tool.importlinter.contracts]]
+name = "jai_manifest is the contract layer and imports no other part"
+type = "forbidden"
+source_modules = ["jai_manifest"]
+forbidden_modules = [
+    "jai_gateway",
+    "jai_blackbox",
+    "jai_meter",
+    "jai_foundry",
+    "jai_dyno",
+    "jai_engine",
+]
+
+[[tool.importlinter.contracts]]
+name = "leaf parts are mutually independent"
+type = "independence"
+modules = [
+    "jai_gateway",
+    "jai_blackbox",
+    "jai_meter",
+    "jai_foundry",
+]
+
+[[tool.importlinter.contracts]]
+name = "no part reaches into another part's internals"
+type = "forbidden"
+source_modules = [
+    "jai_gateway",
+    "jai_blackbox",
+    "jai_meter",
+    "jai_foundry",
+    "jai_dyno",
+    "jai_engine",
+]
+forbidden_modules = [
+    "jai_gateway._internal",
+    "jai_blackbox._internal",
+    "jai_meter._internal",
+    "jai_foundry._internal",
+    "jai_dyno._internal",
+    "jai_engine._internal",
+]
+ignore_imports = [
+    "jai_gateway.* -> jai_gateway._internal",
+    "jai_blackbox.* -> jai_blackbox._internal",
+    "jai_meter.* -> jai_meter._internal",
+    "jai_foundry.* -> jai_foundry._internal",
+    "jai_dyno.* -> jai_dyno._internal",
+    "jai_engine.* -> jai_engine._internal",
+]
+# Parts without an _internal module yet must not fail the contract
+unmatched_ignore_imports_alerting = "none"

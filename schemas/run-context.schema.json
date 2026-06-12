@@ -1,0 +1,81 @@
+{
+  "$defs": {
+    "Actor": {
+      "description": "Who is acting. Agents inherit the human actor's permissions and cannot exceed them.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "title": "Name",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "requester",
+            "category_manager",
+            "cpo",
+            "system"
+          ],
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "role"
+      ],
+      "title": "Actor",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "actor": {
+      "$ref": "#/$defs/Actor"
+    },
+    "agent": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Agent"
+    },
+    "budget_usd_remaining": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Budget Usd Remaining"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "tenant_id": {
+      "title": "Tenant Id",
+      "type": "string"
+    },
+    "trace_id": {
+      "title": "Trace Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "actor"
+  ],
+  "title": "RunContext",
+  "type": "object"
+}
