@@ -91,8 +91,12 @@ export function JourneyBar({
                 height: dot,
                 borderColor: active || done ? color : COLORS.line,
                 background:
-                  active || done ? withAlpha(color, active ? 0.22 : 0.12) : COLORS.panel,
-                boxShadow: active ? `0 0 16px -2px ${withAlpha(color, 0.7)}` : "none",
+                  active || done ? withAlpha(color, active ? 0.24 : 0.18) : COLORS.panel,
+                boxShadow: active
+                  ? `0 0 16px -2px ${withAlpha(color, 0.7)}`
+                  : done
+                    ? `0 0 10px -4px ${withAlpha(color, 0.6)}`
+                    : "none",
               }}
             >
               {active && (
