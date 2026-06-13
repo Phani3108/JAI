@@ -4,11 +4,8 @@
 > structure of its own — and each can be ripped out and plugged into another system over
 > open protocols (MCP, A2A). Assembled together, they form an autonomous procurement
 > network that runs like a well-oiled machine.
->
-> **Read the founding [VISION](docs/VISION.md).**
 
-*Not affiliated with Jaggaer, Inc. or its JAI product. All data is synthetic
-([Borealis Manufacturing](docs/adr/ADR-003-single-postgres.md) is a fictional company);
+All data is synthetic ([Borealis Manufacturing](docs/adr/ADR-003-single-postgres.md) is a fictional company);
 all domain models are generic.*
 
 ## The Parts Catalog
