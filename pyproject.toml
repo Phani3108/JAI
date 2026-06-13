@@ -17,6 +17,8 @@ members = [
     "parts/governor",
     "parts/brakes",
     "parts/mcp",
+    "parts/registry",
+    "parts/mesh",
     "apps/api",
 ]
 
@@ -56,6 +58,8 @@ root_packages = [
     "jai_governor",
     "jai_brakes",
     "jai_mcp",
+    "jai_registry",
+    "jai_mesh",
 ]
 
 [[tool.importlinter.contracts]]
@@ -73,6 +77,8 @@ forbidden_modules = [
     "jai_governor",
     "jai_brakes",
     "jai_mcp",
+    "jai_registry",
+    "jai_mesh",
 ]
 
 [[tool.importlinter.contracts]]
@@ -99,6 +105,8 @@ source_modules = [
     "jai_governor",
     "jai_brakes",
     "jai_mcp",
+    "jai_registry",
+    "jai_mesh",
 ]
 forbidden_modules = [
     "jai_gateway._internal",
@@ -111,6 +119,8 @@ forbidden_modules = [
     "jai_governor._internal",
     "jai_brakes._internal",
     "jai_mcp._internal",
+    "jai_registry._internal",
+    "jai_mesh._internal",
 ]
 ignore_imports = [
     "jai_gateway.* -> jai_gateway._internal",
@@ -123,6 +133,8 @@ ignore_imports = [
     "jai_governor.* -> jai_governor._internal",
     "jai_brakes.* -> jai_brakes._internal",
     "jai_mcp.* -> jai_mcp._internal",
+    "jai_registry.* -> jai_registry._internal",
+    "jai_mesh.* -> jai_mesh._internal",
 ]
 # Parts without an _internal module yet must not fail the contract
 unmatched_ignore_imports_alerting = "none"

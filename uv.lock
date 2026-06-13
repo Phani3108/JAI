@@ -16,7 +16,9 @@ members = [
     "jai-governor",
     "jai-manifest",
     "jai-mcp",
+    "jai-mesh",
     "jai-meter",
+    "jai-registry",
 ]
 
 [[package]]
@@ -472,11 +474,17 @@ version = "0.1.0"
 source = { editable = "apps/api" }
 dependencies = [
     { name = "fastapi" },
+    { name = "jai-blackbox" },
     { name = "jai-brakes" },
     { name = "jai-cortex" },
     { name = "jai-engine" },
     { name = "jai-gateway" },
+    { name = "jai-governor" },
     { name = "jai-manifest" },
+    { name = "jai-mcp" },
+    { name = "jai-mesh" },
+    { name = "jai-meter" },
+    { name = "jai-registry" },
     { name = "psycopg", extra = ["binary"] },
     { name = "uvicorn" },
 ]
@@ -484,11 +492,17 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
+    { name = "jai-blackbox", editable = "parts/blackbox" },
     { name = "jai-brakes", editable = "parts/brakes" },
     { name = "jai-cortex", editable = "parts/cortex" },
     { name = "jai-engine", editable = "parts/engine" },
     { name = "jai-gateway", editable = "parts/gateway" },
+    { name = "jai-governor", editable = "parts/governor" },
     { name = "jai-manifest", editable = "parts/manifest" },
+    { name = "jai-mcp", editable = "parts/mcp" },
+    { name = "jai-mesh", editable = "parts/mesh" },
+    { name = "jai-meter", editable = "parts/meter" },
+    { name = "jai-registry", editable = "parts/registry" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "uvicorn", specifier = ">=0.32" },
 ]
@@ -666,6 +680,21 @@ requires-dist = [
 ]
 
 [[package]]
+name = "jai-mesh"
+version = "0.1.0"
+source = { editable = "parts/mesh" }
+dependencies = [
+    { name = "httpx" },
+    { name = "jai-manifest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "jai-manifest", editable = "parts/manifest" },
+]
+
+[[package]]
 name = "jai-meter"
 version = "0.1.0"
 source = { editable = "parts/meter" }
@@ -678,6 +707,23 @@ dependencies = [
 requires-dist = [
     { name = "jai-manifest", editable = "parts/manifest" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
+]
+
+[[package]]
+name = "jai-registry"
+version = "0.1.0"
+source = { editable = "parts/registry" }
+dependencies = [
+    { name = "jai-manifest" },
+    { name = "psycopg", extra = ["binary"] },
+    { name = "pyyaml" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "jai-manifest", editable = "parts/manifest" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
+    { name = "pyyaml", specifier = ">=6" },
 ]
 
 [[package]]

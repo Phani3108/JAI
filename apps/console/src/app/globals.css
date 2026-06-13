@@ -1,23 +1,281 @@
 @import "tailwindcss";
 
-/* The cockpit is always dark — no light variant this phase. */
+/*
+ * JAI COCKPIT DESIGN SYSTEM — phase 1 foundation.
+ * The instrument cluster of an autonomous procurement fleet. Dark only.
+ *
+ * Conventions:
+ *  - Raw CSS variables live on :root (consumed by hand-rolled SVG + src/lib/theme.ts).
+ *  - @theme inline re-exports them as Tailwind color/font/radius tokens so utilities
+ *    like `text-accent`, `bg-panel`, `border-line`, `font-mono` work in markup.
+ *  - Existing pages still use stock `zinc-*` classes — those keep working untouched.
+ */
+
 :root {
-  --background: #09090b;
-  --foreground: #e4e4e7;
+  /* ---- surfaces (deep graphite stack) ---- */
+  --base: #0a0b0d; /* page floor */
+  --base-2: #0c0e11; /* a hair lighter, for layered fills */
+  --panel: #111418; /* raised instrument surface */
+  --panel-2: #161a20; /* hovered / nested panel */
+  --line: #20262e; /* hairline border */
+  --line-strong: #2c343e; /* emphasized divider */
+
+  /* ---- ink ---- */
+  --ink: #e7ecf2; /* primary text */
+  --ink-muted: #9aa6b4; /* secondary text */
+  --ink-faint: #5c6675; /* tertiary / captions */
+  --ink-ghost: #3a424d; /* disabled / placeholder rails */
+
+  /* ---- signal palette (the telemetry accent is aqua, not plain emerald) ---- */
+  --accent: #22d3ee; /* telemetry cyan/aqua — the signature signal */
+  --accent-dim: #0e7490; /* muted accent for fills/rails */
+  --accent-ink: #062a30; /* text on accent */
+  --ok: #34d399; /* nominal / pass */
+  --warn: #f59e0b; /* amber alert */
+  --danger: #fb7185; /* rose danger */
+  --autonomy: #a78bfa; /* violet — autonomy levels */
+  --info: #38bdf8; /* sky — pending / neutral notice */
+
+  /* ---- six SYSTEM hues (one signature color per car system) ---- */
+  --sys-powertrain: #f59e0b; /* amber — intelligence supply / fuel */
+  --sys-chassis: #38bdf8; /* sky — knowledge frame */
+  --sys-drivetrain: #34d399; /* emerald — domain capability */
+  --sys-safety: #fb7185; /* rose — trust / brakes */
+  --sys-network: #a78bfa; /* violet — the fleet mesh */
+  --sys-cockpit: #22d3ee; /* aqua — human interface */
+
+  /* ---- radii ---- */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+
+  /* ---- elevation + glow ---- */
+  --shadow-panel: 0 1px 0 0 rgb(255 255 255 / 0.02) inset,
+    0 8px 24px -12px rgb(0 0 0 / 0.7);
+  --shadow-pop: 0 12px 40px -12px rgb(0 0 0 / 0.8);
+  --glow-accent: 0 0 0 1px rgb(34 211 238 / 0.25), 0 0 18px -2px rgb(34 211 238 / 0.45);
+
+  /* legacy aliases kept so nothing referencing them breaks */
+  --background: var(--base);
+  --foreground: var(--ink);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* colors → utilities (bg-*, text-*, border-*) */
+  --color-base: var(--base);
+  --color-base-2: var(--base-2);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-ink-ghost: var(--ink-ghost);
+
+  --color-accent: var(--accent);
+  --color-accent-dim: var(--accent-dim);
+  --color-accent-ink: var(--accent-ink);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-autonomy: var(--autonomy);
+  --color-info: var(--info);
+
+  --color-sys-powertrain: var(--sys-powertrain);
+  --color-sys-chassis: var(--sys-chassis);
+  --color-sys-drivetrain: var(--sys-drivetrain);
+  --color-sys-safety: var(--sys-safety);
+  --color-sys-network: var(--sys-network);
+  --color-sys-cockpit: var(--sys-cockpit);
+
+  --color-background: var(--base);
+  --color-foreground: var(--ink);
+
+  /* radii → rounded-* */
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+
+  /* fonts (next/font supplies the variables; these are the fallback stacks) */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", "JetBrains Mono",
+    "Fira Code", monospace;
+
+  /* keyframes → animate-* */
+  --animate-pulse-dot: pulse-dot 1.8s ease-in-out infinite;
+  --animate-sweep: sweep 2.4s linear infinite;
+  --animate-fade-in-up: fade-in-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-shimmer: shimmer 1.4s linear infinite;
+}
+
+/* ---------------------------------------------------------------- base ---- */
+
+* {
+  border-color: var(--line);
+}
+
+html {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    sans-serif;
+  background: var(--base);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* faint telemetry grid woven into the page floor */
+  background-image:
+    radial-gradient(circle at 50% -10%, rgb(34 211 238 / 0.05), transparent 55%),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.015) 1px, transparent 1px),
+    linear-gradient(to right, rgb(255 255 255 / 0.015) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 44px, 44px 100%;
+  background-attachment: fixed;
+}
+
+::selection {
+  background: rgb(34 211 238 / 0.25);
+  color: var(--ink);
+}
+
+/* slim cockpit scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-ghost);
+  background-clip: content-box;
+}
+
+/* ----------------------------------------------------------- utilities ---- */
+
+@layer utilities {
+  /* a titled instrument surface */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-panel);
+  }
+
+  .panel-2 {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+  }
+
+  /* a 1px line in the system color — assign via --line-color, defaults to line */
+  .hairline {
+    border: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  /* dense telemetry-grid background for hero panels / viz backdrops */
+  .telem-grid {
+    background-color: var(--base-2);
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.025) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.025) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  /* accent glow ring — use on focus or to spotlight a live element */
+  .glow {
+    box-shadow: var(--glow-accent);
+  }
+
+  /* mono-spaced metric/ID typography helper */
+  .metric {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  /* consistent cockpit focus ring */
+  .focus-ring:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--base), 0 0 0 3px rgb(34 211 238 / 0.55);
+  }
+
+  /* uppercase instrument label */
+  .label-cap {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 10px;
+    color: var(--ink-faint);
+  }
+
+  .animate-fade-in-up {
+    animation: var(--animate-fade-in-up);
+  }
+}
+
+/* ----------------------------------------------------------- keyframes ---- */
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.82);
+  }
+}
+
+@keyframes sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

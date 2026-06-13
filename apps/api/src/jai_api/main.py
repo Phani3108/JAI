@@ -8,6 +8,7 @@ answer 503 with a JSON error envelope and /health answers 200 with
 from __future__ import annotations
 
 import os
+from functools import lru_cache
 from typing import Annotated, Any, Literal
 
 import psycopg
@@ -26,6 +27,15 @@ class DecideRequest(BaseModel):
     approve: bool
     note: str = ""
 
+
+class OrchestrateRequest(BaseModel):
+    title: str
+    category: str = "Safety Equipment & PPE"
+    est_value_usd: float = 120000
+    tenant_id: str = "TEN-0001"
+    role: str = "cpo"
+    auto_approve: bool = True
+
 Dimension = Literal["tenant_id", "agent", "run_id", "model_group"]
 
 
@@ -34,6 +44,14 @@ def _pg_unavailable(exc: Exception) -> JSONResponse:
         status_code=503,
         content={"error": "postgres_unavailable", "detail": str(exc).strip()},
     )
+
+
+@lru_cache(maxsize=1)
+def _fleet() -> Any:
+    """The orchestration fleet, built once and reused across /orchestrate calls."""
+    from jai_api.fleet import build_fleet
+
+    return build_fleet()
 
 
 def create_app() -> FastAPI:
@@ -97,6 +115,50 @@ def create_app() -> FastAPI:
         except FileNotFoundError as exc:
             return JSONResponse(status_code=503, content={"error": "agent_unavailable",
                                                           "detail": str(exc)})
+        except (psycopg.Error, OSError) as exc:
+            return _pg_unavailable(exc)
+
+    @app.get("/registry")
+    def registry() -> Any:
+        try:
+            from jai_registry import Registry
+
+            reg = Registry()
+            reg.ensure_schema()
+            records = reg.list()
+            if not records:  # first run — sync from disk so the fleet is visible
+                from jai_api.fleet import AGENT_SYSTEMS, AGENTS, RESULTS
+
+                reg.sync_agents(AGENTS, AGENT_SYSTEMS)
+                if RESULTS.exists():
+                    reg.load_scorecards(RESULTS)
+                records = reg.list()
+            return [r.model_dump(mode="json") for r in records]
+        except (psycopg.Error, OSError) as exc:
+            return _pg_unavailable(exc)
+
+    @app.get("/network")
+    def network() -> Any:
+        from jai_api.fleet import network_topology
+
+        return network_topology()
+
+    @app.post("/orchestrate")
+    def orchestrate(req: OrchestrateRequest) -> Any:
+        try:
+            from jai_manifest import Actor, RunContext
+
+            from jai_api.fleet import run_orchestration
+
+            fleet = _fleet()
+            ctx = RunContext(tenant_id=req.tenant_id, actor=Actor(id="console", role=req.role))
+            intake = {
+                "title": req.title, "category": req.category,
+                "est_value_usd": req.est_value_usd,
+                "line_items": [{"sku": "REQ", "qty": 1}],
+                "requested_by": "console", "simulate_bids": 3,
+            }
+            return run_orchestration(fleet, ctx, intake, auto_approve=req.auto_approve)
         except (psycopg.Error, OSError) as exc:
             return _pg_unavailable(exc)
 

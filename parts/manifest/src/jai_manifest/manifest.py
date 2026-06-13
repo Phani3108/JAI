@@ -95,8 +95,11 @@ class AgentManifest(BaseModel):
     a2a_card: str | None = None          # path to the A2A agent card (P3)
     # Which engine graph shape this agent compiles to. "direct" = guard→model→guard;
     # "rag" = guard→retrieve→synthesize→guard (requires an injected retriever);
-    # "sourcing" = the durable, gated RFx workflow (requires tools/governor/brakes).
-    pipeline: Literal["direct", "rag", "sourcing"] = "direct"
+    # "sourcing" = the durable, gated RFx workflow (requires tools/governor/brakes);
+    # "orchestrate" = the coordinator: triage → fan-out specialists → sourcing.
+    pipeline: Literal["direct", "rag", "sourcing", "orchestrate"] = "direct"
+    # Skills this agent exposes on the mesh (A2A skill ids it can be dispatched for).
+    skills: list[str] = Field(default_factory=list)
 
     @field_validator("name")
     @classmethod

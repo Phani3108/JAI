@@ -34,9 +34,13 @@ demo-p1: ## Demo 1: supplier intelligence — one agent, four personas, permissi
 demo-p2: ## Demo 2: autonomous sourcing — gates, kill -9 resume, governor, kill switch
 	uv run python parts/engine/demo/demo_2.py
 
+demo-p3: ## Demo 3: the orchestrated fleet — one intake, one trace, one chain
+	uv run python parts/engine/demo/demo_3.py
+
 evals: ## Run all eval suites (keyless: deterministic policy + retrieval correctness)
 	uv run python evals/run_suite1.py
 	uv run python evals/run_suite2.py
+	uv run python evals/run_suite3.py
 
 schemas: ## Export JSON Schemas from jai-manifest pydantic models
 	uv run jai-manifest export-schemas --out schemas/
@@ -48,7 +52,10 @@ api: ## Run the control plane on :8400
 	uv run uvicorn --factory jai_api.main:create_app --port 8400
 
 console: ## Run the console on :3000 (needs `make api` in another shell)
-	cd apps/console && pnpm dev
+	pnpm --dir apps/console dev
+
+console-build: ## Production-build the console
+	pnpm --dir apps/console install && pnpm --dir apps/console build
 
 lint: ## Ruff + import-boundary contracts
 	uv run ruff check .

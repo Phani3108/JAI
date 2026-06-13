@@ -29,3 +29,6 @@ docs/strategy/_private/
 # Local data
 *.local
 .langfuse/
+
+# Next.js build output
+apps/console/.next/

@@ -1,0 +1,11 @@
+api_version: jai/v1
+name: agent-intake-triage
+description: >
+  Intake triage: classifies a purchase request against policy thresholds and routes it —
+  auto-approved below the threshold, or to a sourcing event when competition is required.
+autonomy_level: 2
+pipeline: direct
+model: {group: fast, max_tokens: 256, budget_usd_per_task: 0.02}
+prompt: {path: prompts/triage.md, version: "1"}
+skills: [intake.triage]
+metrics: {eval_pass_rate: 0.90, max_policy_violations: 0}

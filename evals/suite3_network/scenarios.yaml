@@ -1,0 +1,55 @@
+name: suite3-network
+description: >
+  Orchestrator behaviour across the fleet: routing (auto-approve vs sourcing), correct
+  fan-out/handoff (all specialists + sourcing run under one trace), permission inheritance
+  (a role that can't read news still gets a degraded-but-safe run), and end-to-end award.
+  Each target emits a compact status string; graded on `contains`.
+cases:
+  - id: n-01-small-auto-approves
+    input: '{"title": "Box of gloves", "category": "Safety Equipment & PPE", "est_value_usd": 4000, "role": "cpo"}'
+    expected: "status=auto_approved"
+    grader: contains
+  - id: n-02-below-threshold-auto
+    input: '{"title": "Spot buy adhesives", "category": "Adhesives & Sealants", "est_value_usd": 9000, "role": "cpo"}'
+    expected: "status=auto_approved"
+    grader: contains
+  - id: n-03-at-threshold-sources
+    input: '{"title": "Borderline buy", "category": "Fasteners & Hardware", "est_value_usd": 10000, "role": "cpo"}'
+    expected: "route=sourcing_required"
+    grader: contains
+  - id: n-04-large-completes
+    input: '{"title": "PPE refresh", "category": "Safety Equipment & PPE", "est_value_usd": 120000, "role": "cpo"}'
+    expected: "status=complete"
+    grader: contains
+  - id: n-05-award-landed
+    input: '{"title": "Pump overhaul", "category": "Pumps & Valves", "est_value_usd": 110000, "role": "cpo"}'
+    expected: "award=SUP-"
+    grader: contains
+  - id: n-06-full-fanout-four-hops
+    input: '{"title": "Bearings bulk", "category": "Bearings & Bushings", "est_value_usd": 90000, "role": "cpo"}'
+    expected: "hops=4"
+    grader: contains
+  - id: n-07-one-trace-five-agents
+    input: '{"title": "Tooling refresh", "category": "Cutting Tools", "est_value_usd": 95000, "role": "cpo"}'
+    expected: "agents=5"
+    grader: contains
+  - id: n-08-risk-specialist-ran
+    input: '{"title": "Chemicals restock", "category": "Industrial Chemicals", "est_value_usd": 80000, "role": "cpo"}'
+    expected: "risk=ok"
+    grader: contains
+  - id: n-09-spend-specialist-ran
+    input: '{"title": "Automation parts", "category": "Industrial Automation", "est_value_usd": 85000, "role": "cpo"}'
+    expected: "spend=ok"
+    grader: contains
+  - id: n-10-permission-inheritance-risk-refused
+    input: '{"title": "Packaging buy", "category": "Packaging Materials", "est_value_usd": 60000, "role": "category_manager"}'
+    expected: "risk=refused"
+    grader: contains
+  - id: n-11-mandate-breach-denied
+    input: '{"title": "Mega retrofit", "category": "Industrial Automation", "est_value_usd": 400000, "role": "cpo"}'
+    expected: "status=denied"
+    grader: contains
+  - id: n-12-requester-cannot-source
+    input: '{"title": "Big buy by requester", "category": "Office Supplies", "est_value_usd": 90000, "role": "requester"}'
+    expected: "status=denied"
+    grader: contains

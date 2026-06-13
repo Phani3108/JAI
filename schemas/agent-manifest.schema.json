@@ -241,13 +241,22 @@
       "default": "direct",
       "enum": [
         "direct",
-        "rag"
+        "rag",
+        "sourcing",
+        "orchestrate"
       ],
       "title": "Pipeline",
       "type": "string"
     },
     "prompt": {
       "$ref": "#/$defs/PromptRef"
+    },
+    "skills": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Skills",
+      "type": "array"
     },
     "tools": {
       "items": {

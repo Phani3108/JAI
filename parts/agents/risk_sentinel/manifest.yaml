@@ -1,0 +1,11 @@
+api_version: jai/v1
+name: agent-risk-sentinel
+description: >
+  Risk sentinel: scans supplier news and risk signals for a category and returns a concise
+  risk memo with citations. Reads news — available only to permitted roles.
+autonomy_level: 2
+pipeline: rag
+model: {group: reasoning, max_tokens: 512, budget_usd_per_task: 0.08}
+prompt: {path: prompts/risk.md, version: "1"}
+skills: [risk.assess]
+metrics: {eval_pass_rate: 0.90, max_policy_violations: 0}

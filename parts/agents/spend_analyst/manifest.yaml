@@ -1,0 +1,11 @@
+api_version: jai/v1
+name: agent-spend-analyst
+description: >
+  Spend analyst: pulls the spend cube and price benchmarks for a category and returns a
+  concise spend read — where the money goes and whether a price looks fair.
+autonomy_level: 2
+pipeline: direct
+model: {group: fast, max_tokens: 384, budget_usd_per_task: 0.04}
+prompt: {path: prompts/spend.md, version: "1"}
+skills: [spend.summary]
+metrics: {eval_pass_rate: 0.90, max_policy_violations: 0}

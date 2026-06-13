@@ -151,3 +151,117 @@ export async function postChat(
   }
   return (await res.json()) as ChatReply;
 }
+
+// ====================================================================
+// Phase-1 additions — registry, network, orchestration, health.
+// All throw on failure; callers catch and fall back to the reference fleet.
+// ====================================================================
+
+/** Health ping (GET /health). */
+export interface Health {
+  status: string;
+  postgres?: boolean;
+}
+
+export async function fetchHealth(): Promise<Health> {
+  return await getJSON<Health>("/health");
+}
+
+/** One agent's scorecard (mirrors jai-dyno's scorecard shape). */
+export interface Scorecard {
+  suite: string;
+  pass_rate: number;
+  n_cases: number;
+  n_passed: number;
+  ts: string;
+}
+
+/** One agent/part record from GET /registry. */
+export interface AgentRecord {
+  name: string;
+  system: "POWERTRAIN" | "CHASSIS" | "DRIVETRAIN" | "SAFETY" | "NETWORK" | "COCKPIT";
+  description: string;
+  autonomy_level: 1 | 2 | 3 | 4 | 5;
+  pipeline: "direct" | "rag" | "sourcing" | "orchestrate";
+  skills: string[];
+  status: "active" | "paused" | "killed" | "planned";
+  mandate_usd: number | null;
+  scorecard: Scorecard | null;
+  updated_at?: string;
+}
+
+export async function fetchRegistry(): Promise<AgentRecord[]> {
+  return asList<AgentRecord>(await getJSON("/registry"), "registry", "agents");
+}
+
+/** A node in the fleet graph (GET /network). */
+export interface NetworkNode {
+  id: string;
+  label: string;
+  system: AgentRecord["system"];
+  role: "human" | "agent" | "service";
+}
+
+/** A directed edge in the fleet graph. */
+export interface NetworkEdge {
+  source: string;
+  target: string;
+  label?: string;
+}
+
+export interface NetworkTopology {
+  nodes: NetworkNode[];
+  edges: NetworkEdge[];
+}
+
+export async function fetchNetwork(): Promise<NetworkTopology> {
+  const data = await getJSON<Partial<NetworkTopology>>("/network");
+  return {
+    nodes: Array.isArray(data?.nodes) ? data.nodes : [],
+    edges: Array.isArray(data?.edges) ? data.edges : [],
+  };
+}
+
+/** One hop in an orchestration trace. */
+export interface OrchestrateHop {
+  from_agent: string;
+  to_agent: string;
+  skill_id: string;
+  ok: boolean;
+  cost_usd: number;
+  summary: string;
+}
+
+/** Request body for POST /orchestrate. */
+export interface OrchestrateBody {
+  title: string;
+  category: string;
+  est_value_usd: number;
+  tenant_id: string;
+  role: string;
+}
+
+/** Result of POST /orchestrate. */
+export interface OrchestrateResult {
+  run_id: string;
+  trace_id: string;
+  status: string;
+  hops: OrchestrateHop[];
+  event_id?: string;
+  award: { supplier_id: string; total_usd: number } | null;
+  paused_gate: string | null;
+}
+
+export async function postOrchestrate(
+  body: OrchestrateBody,
+): Promise<OrchestrateResult> {
+  const res = await fetch(`${API_BASE}/orchestrate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new Error(`POST /orchestrate -> HTTP ${res.status}`);
+  }
+  return (await res.json()) as OrchestrateResult;
+}

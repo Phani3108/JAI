@@ -9,6 +9,12 @@ dependencies = [
     "jai-cortex",
     "jai-engine",
     "jai-brakes",
+    "jai-blackbox",
+    "jai-meter",
+    "jai-governor",
+    "jai-mcp",
+    "jai-mesh",
+    "jai-registry",
     "fastapi>=0.115",
     "uvicorn>=0.32",
     "psycopg[binary]>=3.2",
@@ -23,6 +29,13 @@ jai-gateway = { workspace = true }
 jai-cortex = { workspace = true }
 jai-engine = { workspace = true }
 jai-brakes = { workspace = true }
+jai-blackbox = { workspace = true }
+jai-meter = { workspace = true }
+jai-governor = { workspace = true }
+jai-mcp = { workspace = true }
+jai-mesh = { workspace = true }
+jai-registry = { workspace = true }
+
 
 [build-system]
 requires = ["hatchling"]

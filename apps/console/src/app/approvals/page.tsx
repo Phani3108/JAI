@@ -1,26 +1,15 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { OfflineBanner } from "../../components/OfflineBanner";
-import { API_BASE, fmtTs, fmtUsd } from "../../lib/api";
-import { usePoll } from "../../lib/usePoll";
+import { useCallback, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 
-interface Approval {
-  id: number;
-  ts: string;
-  tenant_id: string;
-  gate: string;
-  agent?: string | null;
-  run_id: string;
-  thread_id: string;
-  requested_by: string;
-  payload: {
-    event_id?: string;
-    title?: string;
-    est_value_usd?: number;
-    best_bid?: { supplier_id?: string; total_usd?: number } | null;
-  };
-}
+import { EmptyState, SectionHeader } from "@/components/ui";
+import { COLORS, withAlpha } from "@/lib/theme";
+import { API_BASE } from "@/lib/api";
+import { usePoll } from "@/lib/usePoll";
+
+import { GateCard } from "./_components/GateCard";
+import { fmtUsdFull, moneyAtStake, type Approval } from "./_components/types";
 
 async function fetchApprovals(): Promise<Approval[]> {
   const res = await fetch(`${API_BASE}/approvals`, { cache: "no-store" });
@@ -28,91 +17,207 @@ async function fetchApprovals(): Promise<Approval[]> {
   return (await res.json()) as Approval[];
 }
 
+/**
+ * /approvals — GATES.
+ *
+ * The human-in-the-loop inbox for jai-brakes. Every row is an agent run that hit
+ * a policy gate (over-mandate award, RFx publish) and PAUSED ITSELF DURABLY mid-
+ * flight; it is sitting in Postgres waiting on a verdict. Approving or rejecting
+ * here is what lets the parked run resume — that's the story the page tells.
+ *
+ * Polls GET /approvals (~3s). Decisions POST /approvals/{id}/decide and are
+ * optimistically removed (a verdict-tinted resolve animation), confirmed by the
+ * next poll. Falls back to a quiet "telemetry offline" note, never a crash.
+ */
 export default function ApprovalsPage() {
-  const [deciding, setDeciding] = useState<number | null>(null);
   const [decided, setDecided] = useState<number[]>([]);
-  const { data, offline } = usePoll<Approval[]>(fetchApprovals, 3000);
+  const [now, setNow] = useState(() => Date.now());
+  const { data, offline, loaded } = usePoll<Approval[]>(fetchApprovals, 3000);
 
-  const decide = useCallback(async (id: number, approve: boolean) => {
-    setDeciding(id);
-    try {
-      await fetch(`${API_BASE}/approvals/${id}/decide`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          approver: "console.user",
-          approve,
-          note: approve ? "approved from console" : "rejected from console",
-        }),
-      });
-      setDecided((d) => [...d, id]); // optimistic; the next poll confirms
-    } finally {
-      setDeciding(null);
-    }
+  // Shared clock so each card's "Nm waiting" age advances together, once a second.
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
   }, []);
 
-  const rows = (data ?? []).filter((a) => !decided.includes(a.id));
-  return (
-    <main className="mx-auto max-w-4xl space-y-4">
-      <OfflineBanner show={offline} />
-      <div className="flex items-baseline justify-between">
-        <h1 className="text-lg font-semibold text-zinc-100">Approvals inbox</h1>
-        <span className="text-xs text-zinc-500">
-          gates pause agents durably — deciding here lets the run resume
-        </span>
-      </div>
+  const decide = useCallback(
+    async (id: number, approve: boolean): Promise<void> => {
+      try {
+        await fetch(`${API_BASE}/approvals/${id}/decide`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            approver: "console.user",
+            approve,
+            note: approve ? "approved from console" : "rejected from console",
+          }),
+        });
+      } finally {
+        // Optimistic: drop it now; the next poll confirms it's gone server-side.
+        setDecided((d) => (d.includes(id) ? d : [...d, id]));
+      }
+    },
+    [],
+  );
 
-      {rows.length === 0 ? (
-        <p className="rounded-lg border border-zinc-800 bg-zinc-950 p-6 text-sm text-zinc-500">
-          Nothing pending. Run <code className="text-zinc-400">make demo-p2</code> (or start a
-          sourcing event) and the publish/award gates will land here.
-        </p>
-      ) : (
-        <ul className="space-y-3">
-          {rows.map((a) => (
-            <li
-              key={a.id}
-              className="rounded-lg border border-zinc-800 bg-zinc-950 p-4 text-sm"
+  // Hide anything we've optimistically decided. The `decided` set only ever needs
+  // ids the server is *still* returning (those are the in-flight removals); once a
+  // poll drops an id it's gone from `data` regardless, so we never have to prune.
+  const rows = (data ?? []).filter((a) => !decided.includes(a.id));
+
+  const totalAtStake = rows.reduce(
+    (sum, a) => sum + (moneyAtStake(a).amount ?? 0),
+    0,
+  );
+
+  return (
+    <div className="space-y-6">
+      <SectionHeader
+        kicker="cockpit · human-in-the-loop"
+        title="Gates"
+        subtitle="Runs that hit a policy gate pause themselves durably and wait here. Your verdict is what resumes a parked agent — approve to let it proceed, reject to keep it halted."
+        action={
+          offline && loaded ? (
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px]"
+              style={{
+                borderColor: withAlpha(COLORS.autonomy, 0.35),
+                color: COLORS.autonomy,
+                background: withAlpha(COLORS.autonomy, 0.1),
+              }}
+              title="GET /approvals is unreachable — showing the last known queue."
             >
-              <div className="flex items-center gap-2">
-                <span className="rounded-full border border-amber-700/60 bg-amber-950/40 px-2 py-0.5 text-[11px] text-amber-300">
-                  {a.gate}
-                </span>
-                <span className="font-medium text-zinc-100">
-                  {a.payload?.title ?? a.payload?.event_id ?? `approval #${a.id}`}
-                </span>
-                <span className="ml-auto text-[11px] text-zinc-600">{fmtTs(a.ts)}</span>
-              </div>
-              <div className="mt-2 grid grid-cols-2 gap-1 text-[12px] text-zinc-400 sm:grid-cols-4">
-                <span>tenant {a.tenant_id}</span>
-                <span>agent {a.agent ?? "—"}</span>
-                <span>event {a.payload?.event_id ?? "—"}</span>
-                <span>
-                  {a.payload?.best_bid
-                    ? `best bid ${fmtUsd(a.payload.best_bid.total_usd)}`
-                    : `est ${fmtUsd(a.payload?.est_value_usd)}`}
-                </span>
-              </div>
-              <div className="mt-3 flex gap-2">
-                <button
-                  onClick={() => decide(a.id, true)}
-                  disabled={deciding === a.id}
-                  className="rounded-md bg-emerald-700 px-3 py-1 text-xs font-medium text-emerald-50 hover:bg-emerald-600 disabled:opacity-40"
-                >
-                  Approve
-                </button>
-                <button
-                  onClick={() => decide(a.id, false)}
-                  disabled={deciding === a.id}
-                  className="rounded-md bg-rose-900 px-3 py-1 text-xs font-medium text-rose-100 hover:bg-rose-800 disabled:opacity-40"
-                >
-                  Reject
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
+              <span
+                className="h-1.5 w-1.5 rounded-full"
+                style={{ background: COLORS.autonomy }}
+              />
+              live telemetry offline
+            </span>
+          ) : (
+            <CountBadge count={rows.length} totalUsd={totalAtStake} />
+          )
+        }
+      />
+
+      {!loaded ? (
+        <div className="panel telem-grid">
+          <SkeletonStack />
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="panel telem-grid">
+          <EmptyState
+            icon={<ClearGlyph />}
+            title="No runs are waiting on you"
+            hint={
+              <>
+                When an agent hits a publish or over-mandate award gate it parks
+                here. Run{" "}
+                <code className="metric rounded bg-panel-2 px-1.5 py-0.5 text-ink-muted">
+                  make demo-p2
+                </code>{" "}
+                to send a sourcing run into a gate and watch it land.
+              </>
+            }
+          />
+        </div>
+      ) : (
+        <motion.ul layout className="space-y-3.5">
+          <AnimatePresence mode="popLayout" initial={false}>
+            {rows.map((a, i) => (
+              <GateCard
+                key={a.id}
+                approval={a}
+                onDecide={decide}
+                index={i}
+                now={now}
+              />
+            ))}
+          </AnimatePresence>
+        </motion.ul>
       )}
-    </main>
+    </div>
+  );
+}
+
+/** Live pending count + aggregate stake, rendered in the masthead action slot. */
+function CountBadge({ count, totalUsd }: { count: number; totalUsd: number }) {
+  const live = count > 0;
+  const color = live ? COLORS.warn : COLORS.ok;
+  return (
+    <div className="flex items-center gap-3">
+      {count > 0 && (
+        <span className="metric hidden text-[11px] text-ink-faint sm:inline">
+          {fmtUsdFull(totalUsd)} at stake
+        </span>
+      )}
+      <span
+        className="inline-flex items-center gap-2 rounded-full border px-3 py-1"
+        style={{
+          borderColor: withAlpha(color, 0.4),
+          background: withAlpha(color, 0.1),
+        }}
+      >
+        <span className="relative inline-flex h-2 w-2" aria-hidden>
+          {live && (
+            <span
+              className="absolute inset-0 rounded-full opacity-60 animate-[pulse-dot_1.8s_ease-in-out_infinite]"
+              style={{ background: color }}
+            />
+          )}
+          <span
+            className="relative inline-block h-2 w-2 rounded-full"
+            style={{ background: color, boxShadow: `0 0 8px -1px ${color}` }}
+          />
+        </span>
+        <span className="metric text-[13px] font-semibold" style={{ color }}>
+          {count}
+        </span>
+        <span className="label-cap">{count === 1 ? "gate" : "gates"}</span>
+      </span>
+    </div>
+  );
+}
+
+/** A calm loading shimmer while the first poll is in flight. */
+function SkeletonStack() {
+  return (
+    <div className="space-y-3 p-4">
+      {[0, 1].map((i) => (
+        <div
+          key={i}
+          className="h-28 rounded-lg border border-line bg-panel-2"
+          style={{
+            backgroundImage:
+              "linear-gradient(100deg, transparent 20%, rgb(255 255 255 / 0.03) 50%, transparent 80%)",
+            backgroundSize: "200% 100%",
+          }}
+        >
+          <span
+            className="block h-full w-full rounded-lg animate-[shimmer_1.6s_linear_infinite]"
+            style={{
+              backgroundImage:
+                "linear-gradient(100deg, transparent 30%, rgb(34 211 238 / 0.04) 50%, transparent 70%)",
+              backgroundSize: "200% 100%",
+            }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ClearGlyph() {
+  return (
+    <svg width="34" height="34" viewBox="0 0 32 32" fill="none" aria-hidden>
+      <circle cx="16" cy="16" r="13" stroke={COLORS.inkGhost} strokeWidth="1.4" />
+      <path
+        d="M10.5 16.5 14.5 20.5l7.5-9"
+        stroke={COLORS.ok}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity={0.8}
+      />
+    </svg>
   );
 }

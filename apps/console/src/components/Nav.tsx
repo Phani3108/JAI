@@ -3,31 +3,52 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+/**
+ * Primary cockpit navigation. Every phase-2 route is listed here now so the
+ * links exist before the pages land. The active route gets an animated
+ * underline indicator (shared-layout style, CSS-only).
+ */
 const LINKS = [
   { href: "/", label: "Catalog" },
-  { href: "/chat", label: "Chat" },
-  { href: "/approvals", label: "Approvals" },
-  { href: "/costs", label: "Costs" },
-  { href: "/runs", label: "Runs" },
+  { href: "/network", label: "Fleet" },
+  { href: "/orchestrate", label: "Mission" },
+  { href: "/chat", label: "Ask" },
+  { href: "/approvals", label: "Gates" },
+  { href: "/telemetry", label: "Telemetry" },
+  { href: "/runs", label: "Audit" },
 ] as const;
+
+function isActive(pathname: string, href: string): boolean {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function Nav() {
   const pathname = usePathname();
   return (
-    <nav className="flex items-center gap-1 text-sm">
+    <nav className="flex items-center gap-0.5 text-sm">
       {LINKS.map(({ href, label }) => {
-        const active = pathname === href;
+        const active = isActive(pathname, href);
         return (
           <Link
             key={href}
             href={href}
-            className={`rounded-md px-3 py-1.5 transition-colors ${
+            aria-current={active ? "page" : undefined}
+            className={`focus-ring relative rounded-md px-3 py-1.5 transition-colors ${
               active
-                ? "bg-zinc-800 text-zinc-50"
-                : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
+                ? "text-ink"
+                : "text-ink-muted hover:bg-panel-2 hover:text-ink"
             }`}
           >
             {label}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-x-3 -bottom-px h-px origin-center transition-transform duration-300"
+              style={{
+                background: "linear-gradient(to right, transparent, var(--accent), transparent)",
+                transform: active ? "scaleX(1)" : "scaleX(0)",
+              }}
+            />
           </Link>
         );
       })}
